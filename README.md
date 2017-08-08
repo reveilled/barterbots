@@ -15,6 +15,7 @@ Action types:
 
 
 Bots
+A bot joins a named mqtt server and announces itself in the "broker" channel and announces itself. The broker then specifies a command channel for the bot.
 A bot maintains a value vector for every item in the system.
 A bot must always be a bit greedy and ask for more than it actually wants.
 A bot determines the value of a trade by takeing a dot product of the item quantities.
