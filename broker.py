@@ -4,11 +4,11 @@ import random
 import argparse
 import paho.mqtt.client as mqtt
 
-class Bot(object):
+class Broker(object):
 	def __init__(self, bot_id, mqtt_server = None):
 		#init props
-		self.bot_id = bot_id
-		self.accepted_trades = []
+		self.player_channels = {}
+		self.bot_channels = {}
 
 		#register handlers
 		self.action_handlers = { Action.OFFER_INITIAL : self.default_message_handle,
@@ -31,7 +31,10 @@ class Bot(object):
 
 	def connect_callback(self, client, userdata, flags, rc):
 		print("Connected with result code "+str(rc))
+		#bot default channel
 		self.client.subscribe('broker/room')
+		#player default channel
+		self.client.subscribe('broker/lobby')
 	
 	def message_callback(self, client, userdata, msg):
 		message = bartermessage()
@@ -53,10 +56,9 @@ class Bot(object):
 		print('Currently not handling messages of type',message.action)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description = 'Barter bot using mqtt')
-    parser.add_argument('name', help='A name for this bot to identify itself')
+    parser = argparse.ArgumentParser(description = 'Barter broker using mqtt')
     parser.add_argument('server', help='The mqtt server to connnect to')
     args = parser.parse_args()
 
-    mybot = Bot(args.name, args.server)
-    mybot.loop()
+    broker = Broker(args.server)
+    broker.loop()
