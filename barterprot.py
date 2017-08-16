@@ -64,7 +64,7 @@ class bartermessage(object):
             self.parse_item_list(bytestream[7:])
 
     def parse_join(self, bytestream):
-        self.bot_name, self.channel = bytestream.split(b':')
+        self.bot_id, self.channel = str(bytestream,'UTF8').split(':')
 
     def pack_offer(self, action_type, user, target_item, item_list):
         item_stream = self.pack_item_list(item_list)
@@ -82,4 +82,4 @@ class bartermessage(object):
         return header_stream + struct.pack('>B', response.value) + item_stream 
 
     def pack_join(self, join_type, bot_id, channel_name):
-        return struct.pack('>B', join_type.value) + bot_id + b':' + channel_name
+        return struct.pack('>B', join_type.value) + bytes(bot_id,'UTF8') + b':' + bytes(channel_name,'UTF8')

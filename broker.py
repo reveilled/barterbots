@@ -7,8 +7,6 @@ import paho.mqtt.client as mqtt
 class Broker(object):
     def __init__(self, mqtt_server = None):
         #init props
-        self.player_channels = []
-        self.bot_channels = []
 
         #register handlers
         self.action_handlers = { Action.OFFER_INITIAL : self.default_message_handle,
@@ -30,39 +28,33 @@ class Broker(object):
             self.join(mqtt_server, 1883, 60)
 
     def join_bot_channel(self, topic):
-        self.client.subscribe(topic)
-        self.bot_channels.append(topic)
+        self.client.subscribe(topic,0)
+        self.client.message_callback_add(topic, self.bot_message_callback)
 
     def join_player_channel(self, topic):
-        self.client.subscribe(topic)
-        self.player_channels.append(topic)
+        self.client.subscribe(topic,2)
+        self.client.message_callback_add(topic, self.player_message_callback)
 
     def connect_callback(self, client, userdata, flags, rc):
-        print("Connected with result code "+str(rc))
+        print("Connected with result code " + str(rc))
         #bot default channel
         self.join_bot_channel('broker/room')
         #player default channel
         self.join_player_channel('broker/lobby')
-        
-    def message_callback(self, client, userdata, msg):
-        #handle it
+    
+    def player_message_callback(self, client, userdata, msg):
         topic = msg.topic
+        message = str(msg.payload,'UTF8')
+        self.human_message_handle(message, msg.topic)
 
-        #bots
-        if topic in self.bot_channels:
-            message = bartermessage()
-            message.parse(msg.payload)
-            print('Bot', self.bot_id, 'received message for', topic, ':', message.action)
-            self.action_handlers[message.action](message)
+    def bot_message_callback(self, client, userdata, msg):
+        message = bartermessage()
+        message.parse(msg.payload)
+        print('Bot', message.bot_id, 'sent message for', msg.topic, ':', message.action)
+        self.action_handlers[message.action](message)
 
-        #humans
-        elif topic in self.player_channels:
-            message = str(msg.payload,'UTF8')
-            self.human_message_handle(message, msg.topic)
-
-        #Make the sender know we are very confused as to who they are
-        else:
-            self.client.publish(topic, 'ERROR: message received in unmapped channel')
+    def message_callback(self, client, userdata, msg):
+        print('Somehow subscribed to {topic} and received message: {msg_hex}'.format(topic=msg.topic, msg_hex=str(msg.payload).encode('hex')))
 
     def join(self, server, port, thing):
         self.client.connect(server, port, thing)
@@ -139,6 +131,11 @@ class Broker(object):
         else:
             #TODO: Handle bots we have control over
             self.client.publish(src_topic, 'REJ JOIN {user_id} {bot_id} {topic} BOT NOT PRESENT\n'.format(user_id=user, bot_id=bot, topic=dest_topic))
+
+    def transfer_items_to_bot(user, bot, items):
+        print("Transfer from {user} to {bot}".format(user=user,bot=bot))
+        for item_id, qty in items:
+            print("\t {quantity} of {item}".format(quantity=qty, item=item_id))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Barter broker using mqtt')
